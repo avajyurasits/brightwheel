@@ -2,31 +2,6 @@
 
 AI-powered message triage tool for Brightwheel's Onboarding team.
 
-## Deploy to Vercel (2 minutes)
-
-1. Push this repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → New Project → Import your repo
-3. In **Environment Variables**, add:
-   - `VITE_ANTHROPIC_API_KEY` = your Anthropic API key
-4. Click Deploy
-
-That's it. Vercel will build and host it automatically.
-
-## Run Locally
-
-```bash
-npm install
-```
-
-Create a `.env` file:
-```
-VITE_ANTHROPIC_API_KEY=your_key_here
-```
-
-```bash
-npm run dev
-```
-
 ## What It Does
 
 Paste any inbound message from a school administrator, director, or teacher. The tool outputs:
