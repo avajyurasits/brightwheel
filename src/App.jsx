@@ -105,6 +105,8 @@ export default function App() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('triage')
   const [history, setHistory] = useState([])
+  const [threadsByEmail, setThreadsByEmail] = useState({})
+  const [priorThread, setPriorThread] = useState(null)
 
   const loadSample = (msg) => {
     setSender(msg.sender)
@@ -113,6 +115,14 @@ export default function App() {
     setBody(msg.body)
     setResult(null)
     setError(null)
+    const key = msg.email?.toLowerCase() || ''
+    setPriorThread(threadsByEmail[key]?.length ? threadsByEmail[key] : null)
+  }
+
+  const handleEmailChange = (val) => {
+    setEmail(val)
+    const key = val.trim().toLowerCase()
+    setPriorThread(threadsByEmail[key]?.length ? threadsByEmail[key] : null)
   }
 
   const handleSubmit = useCallback(async () => {
@@ -121,20 +131,29 @@ export default function App() {
     setResult(null)
     setError(null)
 
+    const emailKey = email.trim().toLowerCase()
+    const prior = threadsByEmail[emailKey] || []
+
+    const threadContext = prior.length > 0
+      ? `\n\nTHREAD HISTORY — this sender has ${prior.length} prior message(s) this session:\n` +
+        prior.map((p, i) =>
+          `[${i + 1}] Subject: "${p.subject}" | Category: ${p.category} | Priority: ${p.priority} | Routed to: ${p.routing}`
+        ).join('\n') +
+        `\n\nTreat this as a follow-up. Reference prior context in the draft reply if relevant. Flag POSSIBLE_DUPLICATE if there is no new information.`
+      : ''
+
     const userMessage = `Please triage this inbound message:
 
 Sender: ${sender || 'Unknown'}
 Email: ${email || 'Unknown'}
 Subject: ${subject || '(no subject)'}
 Body:
-${body}`
+${body}${threadContext}`
 
     try {
       const response = await fetch('/api/triage', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
@@ -152,25 +171,39 @@ ${body}`
       const text = data.content[0]?.text || ''
       const clean = text.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
-      setResult(parsed)
-      setHistory(prev => [{
+
+      const entry = {
         id: Date.now(),
         sender: sender || 'Unknown',
+        email: emailKey,
         subject: subject || '(no subject)',
         priority: parsed.priority,
         category: parsed.category,
+        routing: parsed.routing,
         timestamp: new Date().toLocaleTimeString()
-      }, ...prev.slice(0, 19)])
+      }
+
+      setResult(parsed)
+      setHistory(prev => [entry, ...prev.slice(0, 19)])
+
+      if (emailKey) {
+        setThreadsByEmail(prev => ({
+          ...prev,
+          [emailKey]: [entry, ...(prev[emailKey] || [])]
+        }))
+        setPriorThread([entry, ...prior])
+      }
+
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [sender, email, subject, body])
+  }, [sender, email, subject, body, threadsByEmail])
 
   const clearForm = () => {
     setSender(''); setEmail(''); setSubject(''); setBody('')
-    setResult(null); setError(null)
+    setResult(null); setError(null); setPriorThread(null)
   }
 
   return (
@@ -230,9 +263,23 @@ ${body}`
                 </div>
                 <div className="form-group">
                   <label>Sender Email</label>
-                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@school.org" type="email" />
+                  <input
+                    value={email}
+                    onChange={e => handleEmailChange(e.target.value)}
+                    placeholder="jane@school.org"
+                    type="email"
+                  />
                 </div>
               </div>
+
+              {priorThread && priorThread.length > 0 && (
+                <div className="thread-banner">
+                  <span className="thread-icon">↩</span>
+                  <span>
+                    <strong>Thread detected</strong> — {priorThread.length} prior message{priorThread.length > 1 ? 's' : ''} from this sender this session. The triage will reference this context.
+                  </span>
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Subject</label>
@@ -304,6 +351,7 @@ ${body}`
               <div className="history-list">
                 {history.map(item => {
                   const pc = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG['P3 - Normal']
+                  const threadCount = threadsByEmail[item.email]?.length || 0
                   return (
                     <div key={item.id} className="history-item">
                       <div className="history-priority" style={{ background: pc.bg, color: pc.color }}>
@@ -311,7 +359,12 @@ ${body}`
                         {pc.label}
                       </div>
                       <div className="history-content">
-                        <div className="history-sender">{item.sender}</div>
+                        <div className="history-sender">
+                          {item.sender}
+                          {threadCount > 1 && (
+                            <span className="thread-count">{threadCount} messages</span>
+                          )}
+                        </div>
                         <div className="history-subject">{item.subject}</div>
                         <div className="history-category">{item.category}</div>
                       </div>

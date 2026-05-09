@@ -614,3 +614,36 @@ html, body, #root {
   font-family: var(--font-mono);
   white-space: nowrap;
 }
+
+/* THREAD BANNER */
+.thread-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: #1e40af;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.thread-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.thread-count {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
