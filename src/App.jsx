@@ -121,8 +121,6 @@ export default function App() {
     setResult(null)
     setError(null)
 
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-
     const userMessage = `Please triage this inbound message:
 
 Sender: ${sender || 'Unknown'}
@@ -132,13 +130,10 @@ Body:
 ${body}`
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/triage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
