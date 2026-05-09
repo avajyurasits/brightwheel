@@ -16,5 +16,6 @@ Paste any inbound message from a school administrator, director, or teacher. The
 ## Tech
 
 - React + Vite
+- Vercel for serverless deployment
 - Anthropic Claude claude-sonnet-4-20250514 API
 - No backend required — API key lives in Vercel env vars
